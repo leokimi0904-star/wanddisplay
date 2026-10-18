@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wanddisplay Zuhause</title>
+<meta name="apple-mobile-web-app-title" content="Zuhause">
+<meta name="theme-color" content="#0e131a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600&display=swap">
+<style>
+/* Layout: landscape wall panel, 4-column grid. Top row = Wetter (2) · Kalender · Timer, bottom row = Geräte (2) · Musik (2).
+   Deliberately dark-only: evening living-room slate, warm lamp-amber marks anything that is switched on. */
+:root {
+  color-scheme: dark;
+  --bg: #0e131a;
+  --panel: #161d27;
+  --panel-2: #1e2734;
+  --line: #29344396;
+  --fg: #e9eef4;
+  --muted: #8a97a9;
+  --lamp: #f4b860;
+  --lamp-soft: #f4b8601f;
+  --sky: #78aee0;
+  --sky-soft: #78aee01c;
+  --spotify: #3fcf74;
+  --alarm: #ff6b5e;
+  --font-display: "Red Hat Display", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Red Hat Text", "Segoe UI", system-ui, sans-serif;
+  --r: 20px;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.app {
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  padding-top: max(14px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Header */
+.top { display: flex; align-items: center; gap: 16px; padding-inline: 4px; }
+.clock { font-family: var(--font-display); font-weight: 600; font-size: 44px; line-height: 1; letter-spacing: -0.5px; }
+.date { display: grid; gap: 2px; }
+.date b { font-weight: 600; font-size: 16px; }
+.date span { color: var(--muted); font-size: 13px; }
+.top .spacer { flex: 1; }
+.icon-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 999px;
+  background: var(--panel); color: var(--muted); font-size: 13px;
+}
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* Grid */
+.grid {
+  display: grid; gap: 14px; min-height: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1.12fr);
+  grid-template-areas:
+    "wx wx cal timer"
+    "dev dev music music";
+}
+.card {
+  background: var(--panel);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; gap: 12px;
+  overflow: hidden;
+}
+.card-head { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.card-head h2 {
+  margin: 0; font-family: var(--font-body); font-weight: 600; font-size: 12px;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted);
+}
+.card-head svg { width: 16px; height: 16px; color: var(--muted); }
+.card-head .end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.chip {
+  font-size: 11px; padding: 3px 8px; border-radius: 999px;
+  background: var(--panel-2); color: var(--muted); white-space: nowrap;
+}
+
+/* Wetter */
+.wx { grid-area: wx; }
+.wx-now { display: flex; align-items: center; gap: 18px; }
+.wx-now .big-icon { width: 64px; height: 64px; flex: none; }
+.wx-temp { font-family: var(--font-display); font-size: 54px; font-weight: 600; line-height: 1; }
+.wx-temp small { font-size: 22px; color: var(--muted); font-weight: 500; vertical-align: top; }
+.wx-desc { display: grid; gap: 4px; }
+.wx-desc b { font-size: 18px; font-weight: 600; }
+.wx-desc span { color: var(--muted); font-size: 13px; }
+.wx-meta { margin-left: auto; display: grid; gap: 6px; text-align: right; color: var(--muted); font-size: 13px; }
+.wx-week {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px;
+  margin-top: auto;
+}
+.wx-day {
+  display: grid; justify-items: center; gap: 6px; padding: 10px 2px;
+  border-radius: 14px; background: var(--panel-2);
+}
+.wx-day.today { background: var(--sky-soft); box-shadow: inset 0 0 0 1px #78aee055; }
+.wx-day .d { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .5px; }
+.wx-day svg { width: 28px; height: 28px; }
+.wx-day .t { font-size: 14px; font-weight: 600; }
+.wx-day .t span { color: var(--muted); font-weight: 400; }
+.wx-day .p { font-size: 11px; color: var(--sky); min-height: 13px; }
+
+/* Kalender */
+.cal { grid-area: cal; }
+.cal-list { display: grid; gap: 8px; overflow-y: auto; align-content: start; margin-right: -6px; padding-right: 6px; }
+.ev { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.ev:first-child { border-top: 0; }
+.ev .time { font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.35; }
+.ev .title { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.ev.allday .time { font-size: 11px; letter-spacing: .4px; }
+.ev.past { opacity: .4; }
+.ev.now .time { color: var(--sky); }
+.ev.now .title::after { content: "läuft"; margin-left: 8px; font-size: 11px; color: var(--sky); }
+.cal-empty { color: var(--muted); font-size: 14px; }
+
+/* Timer */
+.timer { grid-area: timer; align-items: stretch; }
+.ring-wrap { position: relative; align-self: center; width: min(100%, 150px); aspect-ratio: 1; max-width: 100%; }
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--panel-2); stroke-width: 9; }
+.ring-fg { fill: none; stroke: var(--sky); stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset .4s linear; }
+.timer.paused .ring-fg { stroke: var(--muted); }
+.ring-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 2px; }
+.ring-label b { font-family: var(--font-display); font-size: 32px; font-weight: 600; }
+.ring-label span { font-size: 12px; color: var(--muted); }
+.quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: auto; }
+.quick button, .t-actions button {
+  padding: 11px 6px; border-radius: 12px; background: var(--panel-2);
+  font-weight: 600; font-size: 14px;
+}
+.quick button:active, .t-actions button:active { background: var(--sky-soft); }
+.t-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: auto; }
+.t-actions .stop { color: var(--alarm); }
+
+/* Geräte */
+.dev { grid-area: dev; }
+.scene {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 999px; background: var(--panel-2);
+  font-weight: 600; font-size: 14px;
+}
+.scene svg { width: 16px; height: 16px; }
+.scene:active { background: var(--lamp-soft); }
+.rooms { display: grid; gap: 14px; overflow-y: auto; align-content: start; }
+.room h3 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.tile {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px;
+  text-align: left; padding: 14px; border-radius: 16px;
+  background: var(--panel-2);
+  transition: background .2s, box-shadow .2s;
+}
+.tile .ico {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: #ffffff0d; color: var(--muted); transition: inherit;
+}
+.tile .ico svg { width: 22px; height: 22px; }
+.tile .name { font-weight: 600; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.tile .state { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.tile[aria-pressed="true"] { background: var(--lamp-soft); box-shadow: inset 0 0 0 1px #f4b86055; }
+.tile[aria-pressed="true"] .ico { background: var(--lamp); color: #3a2608; box-shadow: 0 0 22px #f4b86066; }
+.tile[aria-pressed="true"] .state { color: var(--lamp); }
+.tile:active { transform: scale(.98); }
+.tile.busy .state::after { content: " …"; }
+
+/* Musik */
+.music { grid-area: music; }
+.player { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; flex: 1; min-height: 0; }
+.cover {
+  width: clamp(96px, 16vh, 150px); aspect-ratio: 1; max-width: 100%; border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 30%, #f4b860 0 18%, transparent 19%),
+    linear-gradient(135deg, #2b5a7a, #10293b 60%, #0b1620);
+  box-shadow: 0 10px 30px #0006;
+}
+.track { display: grid; gap: 4px; min-width: 0; }
+.track b { font-family: var(--font-display); font-size: 22px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track span { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress { margin-top: 12px; display: grid; gap: 6px; }
+.bar { height: 5px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--fg); border-radius: 3px; }
+.times { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+.controls { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.controls button { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; }
+.controls button svg { width: 22px; height: 22px; }
+.controls .play { width: 56px; height: 56px; background: var(--fg); color: var(--bg); }
+.controls .play svg { width: 26px; height: 26px; }
+.vol { display: flex; align-items: center; gap: 10px; margin-left: auto; color: var(--muted); flex: 0 1 180px; min-width: 100px; }
+.vol svg { width: 18px; height: 18px; flex: none; }
+input[type=range] { width: 100%; accent-color: var(--fg); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spotify); display: inline-block; }
+
+/* Overlays */
+.night {
+  position: fixed; inset: 0; z-index: 50; background: #000;
+  display: grid; place-items: end center;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  color: #ffffff30; font-size: 12px;
+}
+.alarm {
+  position: fixed; inset: 0; z-index: 60;
+  background: #160b0bf2; display: grid; place-content: center; gap: 22px; text-align: center;
+  padding: 24px;
+}
+.alarm b { font-family: var(--font-display); font-size: 56px; font-weight: 700; color: var(--alarm); }
+.alarm p { margin: 0; font-size: 18px; color: var(--fg); }
+.alarm button { justify-self: center; padding: 18px 56px; border-radius: 999px; background: var(--alarm); color: #1b0605; font-size: 20px; font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  .alarm b { animation: pulse 1s ease-in-out infinite; }
+}
+@keyframes pulse { 50% { opacity: .45; } }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  background: var(--panel-2); color: var(--fg); padding: 12px 18px; border-radius: 12px;
+  font-size: 14px; box-shadow: 0 10px 30px #0008; max-width: calc(100% - 32px);
+}
+
+/* Hochformat / Handy: alles untereinander, Seite darf scrollen */
+@media (max-width: 899px), (orientation: portrait) {
+  html, body { height: auto; }
+  .app { height: auto; }
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: "dev" "timer" "wx" "cal" "music";
+  }
+  .card { overflow: visible; }
+  .clock { font-size: 36px; }
+  .top .label { display: none; }
+}
+@media (max-width: 520px) {
+  .wx-week { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .wx-meta { display: none; }
+  .player { grid-template-columns: minmax(0, 1fr); }
+  .cover { width: 100px; }
+  .vol { flex-basis: 100%; margin-left: 0; }
+  .controls { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7zM12 17v5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5v14L8 12zM6 5h2v14H6z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l10-7zM16 5h2v14h-2z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="#f4c060" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="#f4c060"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-partly" viewBox="0 0 24 24" fill="none" stroke-linecap="round"><circle cx="9" cy="9" r="3.6" fill="#f4c060"/><path d="M9 2.5v1.3M2.5 9h1.3M4.4 4.4l.9.9M13.6 4.4l-.9.9" stroke="#f4c060" stroke-width="1.8"/><path d="M8 20h9.5a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 8 20z" fill="#c9d3df"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .3-8 6 6 0 0 0-11.4 1.7A3.2 3.2 0 0 0 7 19z" fill="#aab6c4"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24" stroke-linecap="round"><path d="M7 15h10.5a4 4 0 0 0 .3-8 6 6 0 0 0-11.4 1.7A3.2 3.2 0 0 0 7 15z" fill="#aab6c4"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#78aee0" stroke-width="2"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M7 15h10.5a4 4 0 0 0 .3-8 6 6 0 0 0-11.4 1.7A3.2 3.2 0 0 0 7 15z" fill="#aab6c4"/><g fill="#e9eef4"><circle cx="8" cy="19" r="1.3"/><circle cx="12" cy="20.5" r="1.3"/><circle cx="16" cy="19" r="1.3"/></g></symbol>
+  <symbol id="i-fog" viewBox="0 0 24 24" stroke="#aab6c4" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M6 13h12M4 17h16"/></symbol>
+  <symbol id="i-storm" viewBox="0 0 24 24"><path d="M7 15h10.5a4 4 0 0 0 .3-8 6 6 0 0 0-11.4 1.7A3.2 3.2 0 0 0 7 15z" fill="#8f9aa8"/><path d="M13 14l-3 4h3l-2 4" fill="none" stroke="#f4c060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="clock num" id="clock">--:--</div>
+    <div class="date"><b id="dateLine">–</b><span>Berlin-Mariendorf · 12105</span></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="nightTest" type="button" title="Nachtmodus 22:30–7:00 testen">
+      <svg><use href="#i-moon"/></svg><span class="label">Nachtmodus testen</span>
+    </button>
+  </header>
+
+  <main class="grid">
+    <section class="card wx" aria-label="Wetter">
+      <div class="card-head"><h2>Wetter</h2><div class="end"><span class="chip" id="wxSource">lädt …</span></div></div>
+      <div class="wx-now">
+        <svg class="big-icon" id="wxIcon"><use href="#i-partly"/></svg>
+        <div class="wx-temp num" id="wxTemp">–<small>°C</small></div>
+        <div class="wx-desc"><b id="wxDesc">–</b><span id="wxFeels">–</span></div>
+        <div class="wx-meta num"><span id="wxHum">–</span><span id="wxWind">–</span><span id="wxSun">–</span></div>
+      </div>
+      <div class="wx-week" id="wxWeek"></div>
+    </section>
+
+    <section class="card cal" aria-label="Kalender heute">
+      <div class="card-head"><svg><use href="#i-cal"/></svg><h2>Heute</h2><div class="end"><span class="chip">Beispiel</span></div></div>
+      <div class="cal-list" id="calList"></div>
+    </section>
+
+    <section class="card timer" id="timerCard" aria-label="Timer">
+      <div class="card-head"><svg><use href="#i-timer"/></svg><h2>Timer</h2></div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fg" id="ring" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="ring-label"><b class="num" id="tLeft">00:00</b><span id="tInfo">Dauer wählen</span></div>
+      </div>
+      <div class="quick" id="tQuick">
+        <button type="button" data-min="5">5 min</button>
+        <button type="button" data-min="15">15 min</button>
+        <button type="button" data-min="30">30 min</button>
+        <button type="button" data-min="60">60 min</button>
+      </div>
+      <div class="t-actions" id="tActions" hidden>
+        <button type="button" id="tPause">Pause</button>
+        <button type="button" class="stop" id="tCancel">Abbrechen</button>
+      </div>
+    </section>
+
+    <section class="card dev" aria-label="Licht und Steckdosen">
+      <div class="card-head">
+        <svg><use href="#i-home"/></svg><h2>Licht &amp; Steckdosen</h2>
+        <div class="end">
+          <span class="chip">Beispielgeräte</span>
+          <button class="scene" type="button" id="sceneNight"><svg><use href="#i-moon"/></svg>Gute Nacht</button>
+        </div>
+      </div>
+      <div class="rooms" id="rooms"></div>
+    </section>
+
+    <section class="card music" aria-label="Musik">
+      <div class="card-head"><svg><use href="#i-music"/></svg><h2>Spotify</h2>
+        <div class="end"><span class="chip"><span class="dot"></span> iPad · Bluetooth-Box</span><span class="chip">Beispiel</span></div>
+      </div>
+      <div class="player">
+        <div class="cover" role="img" aria-label="Albumcover"></div>
+        <div style="min-width:0">
+          <div class="track"><b id="mTitle">Haus am See</b><span id="mArtist">Peter Fox · Stadtaffe</span></div>
+          <div class="progress">
+            <div class="bar"><i id="mBar" style="width:0%"></i></div>
+            <div class="times num"><span id="mPos">0:00</span><span id="mDur">4:41</span></div>
+          </div>
+          <div class="controls">
+            <button type="button" id="mPrev" aria-label="Vorheriger Titel"><svg><use href="#i-prev"/></svg></button>
+            <button type="button" class="play" id="mPlay" aria-label="Abspielen"><svg><use href="#i-play"/></svg></button>
+            <button type="button" id="mNext" aria-label="Nächster Titel"><svg><use href="#i-next"/></svg></button>
+            <label class="vol"><svg><use href="#i-vol"/></svg><input type="range" id="mVol" min="0" max="100" value="45" aria-label="Lautstärke"></label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="night" id="night" hidden>Zum Aufwecken tippen</div>
+<div class="alarm" id="alarm" hidden role="alertdialog" aria-label="Timer abgelaufen">
+  <b>Zeit ist um</b>
+  <p id="alarmText">Dein Timer ist abgelaufen.</p>
+  <button type="button" id="alarmStop">Stopp</button>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let toastTimer;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600);
+}
+const pad = (n) => String(n).padStart(2, "0");
+
+/* ===== Uhr & Datum ===== */
+const fmtDate = new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "numeric", month: "long" });
+function tickClock() {
+  const now = new Date();
+  $("clock").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  $("dateLine").textContent = fmtDate.format(now);
+}
+
+/* ===== Wetter (Open-Meteo, ohne API-Schlüssel) ===== */
+const WMO = (c) =>
+  c === 0 ? ["Klar", "sun"] : c === 1 ? ["Überwiegend klar", "sun"] : c === 2 ? ["Teils bewölkt", "partly"] :
+  c === 3 ? ["Bedeckt", "cloud"] : c <= 48 ? ["Nebel", "fog"] : c <= 57 ? ["Nieselregen", "rain"] :
+  c <= 67 ? ["Regen", "rain"] : c <= 77 ? ["Schnee", "snow"] : c <= 82 ? ["Regenschauer", "rain"] :
+  c <= 86 ? ["Schneeschauer", "snow"] : ["Gewitter", "storm"];
+const wd = new Intl.DateTimeFormat("de-DE", { weekday: "short" });
+const hm = (iso) => iso.slice(11, 16);
+
+function sampleWeather() {
+  const days = [], base = new Date();
+  const codes = [2, 61, 3, 1, 0, 80, 2], max = [12, 10, 11, 13, 14, 11, 12], min = [6, 7, 5, 4, 5, 6, 5], pr = [10, 80, 30, 5, 0, 60, 20];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(base); d.setDate(d.getDate() + i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return {
+    current: { temperature_2m: 11.4, apparent_temperature: 9.2, relative_humidity_2m: 72, weather_code: 2, wind_speed_10m: 14 },
+    daily: { time: days, weather_code: codes, temperature_2m_max: max, temperature_2m_min: min,
+      precipitation_probability_max: pr, sunrise: [days[0] + "T07:28"], sunset: [days[0] + "T18:09"] },
+  };
+}
+function renderWeather(w, live) {
+  const c = w.current, [desc, icon] = WMO(c.weather_code);
+  $("wxIcon").innerHTML = `<use href="#i-${icon}"/>`;
+  $("wxTemp").innerHTML = `${Math.round(c.temperature_2m)}<small>°C</small>`;
+  $("wxDesc").textContent = desc;
+  $("wxFeels").textContent = `Gefühlt ${Math.round(c.apparent_temperature)}°`;
+  $("wxHum").textContent = `Luftfeuchte ${c.relative_humidity_2m} %`;
+  $("wxWind").textContent = `Wind ${Math.round(c.wind_speed_10m)} km/h`;
+  $("wxSun").textContent = `☀ ${hm(w.daily.sunrise[0])} – ${hm(w.daily.sunset[0])}`;
+  $("wxSource").textContent = live ? "Open-Meteo · live" : "Beispieldaten";
+  const d = w.daily;
+  $("wxWeek").innerHTML = d.time.map((t, i) => {
+    const [label, ic] = WMO(d.weather_code[i]);
+    const name = i === 0 ? "Heute" : wd.format(new Date(t + "T12:00")).replace(".", "");
+    const p = d.precipitation_probability_max[i];
+    return `<div class="wx-day ${i === 0 ? "today" : ""}" title="${label}">
+      <span class="d">${name}</span><svg aria-label="${label}"><use href="#i-${ic}"/></svg>
+      <span class="t num">${Math.round(d.temperature_2m_max[i])}° <span>${Math.round(d.temperature_2m_min[i])}°</span></span>
+      <span class="p num">${p >= 20 ? p + " %" : ""}</span></div>`;
+  }).join("");
+}
+async function loadWeather() {
+  const { lat, lon } = CONFIG.location;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
+    `&timezone=Europe%2FBerlin&forecast_days=7`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    renderWeather(await r.json(), true);
+  } catch {
+    renderWeather(sampleWeather(), false);
+  }
+}
+
+/* ===== Kalender (Beispiel; später iCloud-Abo-Link) ===== */
+const EVENTS = [
+  { allDay: true, title: "Umzugswoche" },
+  { start: "09:30", end: "10:00", title: "Bürgeramt – Wohnsitz ummelden" },
+  { start: "12:00", end: "14:00", title: "Möbellieferung" },
+  { start: "18:00", end: "19:00", title: "Sport" },
+  { start: "19:30", end: "22:00", title: "Abendessen bei Freunden" },
+];
+function renderCalendar() {
+  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  const toMin = (s) => +s.slice(0, 2) * 60 + +s.slice(3);
+  $("calList").innerHTML = EVENTS.map((e) => {
+    if (e.allDay) return `<div class="ev allday"><span class="time">GANZ&shy;TÄGIG</span><span class="title">${e.title}</span></div>`;
+    const s = toMin(e.start), en = toMin(e.end);
+    const cls = en <= mins ? "past" : s <= mins ? "now" : "";
+    return `<div class="ev ${cls}"><span class="time num">${e.start}</span><span class="title">${e.title}</span></div>`;
+  }).join("") || `<p class="cal-empty">Heute keine Termine.</p>`;
+}
+
+/* ===== Geräte (Voice Monkey → Alexa-Routinen) ===== */
+let devState = store.get("devState", { stehlampe: true, lichterkette: true });
+async function sendToAlexa(deviceId, on) {
+  // Später: fetch(`https://api-v2.voicemonkey.io/trigger?token=${token}&device=${deviceId}-${on ? "an" : "aus"}`)
+  await new Promise((r) => setTimeout(r, 350));
+  return true;
+}
+function renderDevices() {
+  $("rooms").innerHTML = CONFIG.rooms.map((room) => `
+    <div class="room"><h3>${room.name}</h3><div class="tiles">
+      ${room.devices.map((d) => `
+        <button type="button" class="tile" data-id="${d.id}" aria-pressed="${!!devState[d.id]}">
+          <span class="ico"><svg><use href="#i-${d.type === "light" ? "bulb" : "plug"}"/></svg></span>
+          <span><span class="name">${d.name}</span><span class="state" style="display:block">${devState[d.id] ? "An" : "Aus"}</span></span>
+        </button>`).join("")}
+    </div></div>`).join("");
+}
+const allDevices = () => CONFIG.rooms.flatMap((r) => r.devices);
+$("rooms").addEventListener("click", async (e) => {
+  const tile = e.target.closest(".tile"); if (!tile) return;
+  const id = tile.dataset.id, on = !devState[id];
+  devState[id] = on; store.set("devState", devState);
+  tile.setAttribute("aria-pressed", on);
+  tile.querySelector(".state").textContent = on ? "An" : "Aus";
+  tile.classList.add("busy");
+  await sendToAlexa(id, on);
+  tile.classList.remove("busy");
+  const dev = allDevices().find((d) => d.id === id);
+  toast(`${dev.name} ${on ? "eingeschaltet" : "ausgeschaltet"} (Vorschau, noch nicht mit Alexa verbunden)`);
+});
+$("sceneNight").addEventListener("click", async () => {
+  allDevices().forEach((d) => (devState[d.id] = false));
+  store.set("devState", devState); renderDevices();
+  await sendToAlexa("gute-nacht", true);
+  toast("Gute Nacht: alle Geräte aus (Vorschau)");
+});
+
+/* ===== Timer ===== */
+const RING = 2 * Math.PI * 52;
+$("ring").style.strokeDasharray = RING;
+let timer = store.get("timer", null); // { total, endAt } oder { total, left } wenn pausiert
+let audioCtx, alarmLoop;
+function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch {}
+}
+function beep() {
+  if (!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  [0, 0.25, 0.5].forEach((dt) => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "sine"; o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, t0 + dt);
+    g.gain.exponentialRampToValueAtTime(0.5, t0 + dt + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.2);
+    o.connect(g).connect(audioCtx.destination); o.start(t0 + dt); o.stop(t0 + dt + 0.22);
+  });
+}
+const fmtLeft = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600);
+  return h ? `${h}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}` : `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
+function renderTimer() {
+  const card = $("timerCard"), running = timer && timer.endAt, paused = timer && timer.left != null;
+  $("tQuick").hidden = !!timer; $("tActions").hidden = !timer;
+  card.classList.toggle("paused", !!paused);
+  if (!timer) { $("tLeft").textContent = "00:00"; $("tInfo").textContent = "Dauer wählen"; $("ring").style.strokeDashoffset = RING; return; }
+  const left = running ? timer.endAt - Date.now() : timer.left;
+  $("tLeft").textContent = fmtLeft(left);
+  $("tInfo").textContent = paused ? "pausiert" : `${timer.total / 60000} min`;
+  $("tPause").textContent = paused ? "Weiter" : "Pause";
+  $("ring").style.strokeDashoffset = RING * (1 - Math.max(0, left) / timer.total);
+  if (running && left <= 0) finishTimer();
+}
+function finishTimer() {
+  const mins = timer.total / 60000;
+  timer = null; store.set("timer", null); renderTimer();
+  $("alarmText").textContent = `Dein ${mins}-Minuten-Timer ist abgelaufen.`;
+  $("alarm").hidden = false; wake(true);
+  let n = 0; beep();
+  alarmLoop = setInterval(() => (++n > 120 ? stopAlarm() : beep()), 1200);
+}
+function stopAlarm() { clearInterval(alarmLoop); $("alarm").hidden = true; }
+$("tQuick").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  unlockAudio();
+  const total = +b.dataset.min * 60000;
+  timer = { total, endAt: Date.now() + total }; store.set("timer", timer); renderTimer();
+});
+$("tPause").addEventListener("click", () => {
+  if (timer.left != null) timer = { total: timer.total, endAt: Date.now() + timer.left };
+  else timer = { total: timer.total, left: timer.endAt - Date.now() };
+  store.set("timer", timer); renderTimer();
+});
+$("tCancel").addEventListener("click", () => { timer = null; store.set("timer", null); renderTimer(); });
+$("alarmStop").addEventListener("click", stopAlarm);
+
+/* ===== Musik (Vorschau; später Spotify Web API) ===== */
+const TRACKS = [
+  { t: "Haus am See", a: "Peter Fox · Stadtaffe", d: 281 },
+  { t: "Dickes B", a: "Seeed · New Dubby Conquerors", d: 252 },
+  { t: "Ich & Ich", a: "Ich + Ich · Vom selben Stern", d: 236 },
+];
+let m = { i: 0, pos: 64, playing: false };
+const mmss = (s) => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
+function renderMusic() {
+  const tr = TRACKS[m.i];
+  $("mTitle").textContent = tr.t; $("mArtist").textContent = tr.a;
+  $("mPos").textContent = mmss(m.pos); $("mDur").textContent = mmss(tr.d);
+  $("mBar").style.width = (m.pos / tr.d) * 100 + "%";
+  $("mPlay").innerHTML = `<svg><use href="#i-${m.playing ? "pause" : "play"}"/></svg>`;
+  $("mPlay").setAttribute("aria-label", m.playing ? "Pause" : "Abspielen");
+}
+const skip = (dir) => { m.i = (m.i + dir + TRACKS.length) % TRACKS.length; m.pos = 0; renderMusic(); };
+$("mPlay").addEventListener("click", () => { m.playing = !m.playing; renderMusic(); });
+$("mPrev").addEventListener("click", () => (m.pos > 5 ? ((m.pos = 0), renderMusic()) : skip(-1)));
+$("mNext").addEventListener("click", () => skip(1));
+$("mVol").addEventListener("change", (e) => toast(`Lautstärke ${e.target.value} % (Vorschau)`));
+
+/* ===== Nachtmodus ===== */
+const toMinutes = (s) => +s.slice(0, 2) * 60 + +s.slice(3);
+let wakeUntil = 0, forceNight = false;
+function isNight() {
+  const n = new Date(), x = n.getHours() * 60 + n.getMinutes();
+  return x >= toMinutes(CONFIG.night.off) || x < toMinutes(CONFIG.night.on);
+}
+function updateNight() {
+  const dark = (forceNight || isNight()) && Date.now() > wakeUntil && $("alarm").hidden;
+  $("night").hidden = !dark;
+}
+function wake(force) { wakeUntil = Date.now() + 60000; if (force) forceNight = false; updateNight(); }
+$("night").addEventListener("click", () => { forceNight = false; wake(); });
+$("nightTest").addEventListener("click", () => { forceNight = true; wakeUntil = 0; updateNight(); });
+
+/* Bildschirm wach halten, solange das Dashboard offen ist */
+async function keepAwake() { try { await navigator.wakeLock?.request("screen"); } catch {} }
+document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && keepAwake());
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+
+/* ===== Start ===== */
+tickClock(); renderCalendar(); renderDevices(); renderTimer(); renderMusic(); updateNight(); keepAwake();
+loadWeather();
+setInterval(() => {
+  tickClock(); renderTimer(); updateNight();
+  if (m.playing) { m.pos += 1; if (m.pos >= TRACKS[m.i].d) skip(1); else renderMusic(); }
+}, 1000);
+setInterval(renderCalendar, 60000);
+setInterval(loadWeather, 15 * 60000);
+</script>
+</body>
+</html>
