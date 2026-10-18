@@ -137,10 +137,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--sky); outli
 .ev .time { font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.35; }
 .ev .title { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
 .ev.allday .time { font-size: 11px; letter-spacing: .4px; }
-.ev.past { opacity: .4; }
 .ev.now .time { color: var(--sky); }
 .ev.now .title::after { content: "läuft"; margin-left: 8px; font-size: 11px; color: var(--sky); }
-.cal-empty { color: var(--muted); font-size: 14px; }
+.cal-empty { color: var(--muted); font-size: 14px; line-height: 1.4; margin: 0; }
+.ev .until { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.chip.ok { color: var(--sky); }
+.chip.err { color: var(--alarm); }
 
 /* Timer */
 .timer { grid-area: timer; align-items: stretch; }
@@ -219,6 +221,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--sky); outli
 input[type=range] { width: 100%; accent-color: var(--fg); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spotify); display: inline-block; }
 
+/* Einstellungen */
+.sheet { position: fixed; inset: 0; z-index: 55; background: #05080cd0; display: grid; place-items: center; padding: 24px; }
+.sheet-card { width: min(520px, 100%); box-sizing: border-box; background: var(--panel); border-radius: var(--r); padding: 22px; display: grid; gap: 8px; }
+.sheet-card h2 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 600; }
+.sheet-card label { font-weight: 600; font-size: 14px; margin-top: 12px; }
+.sheet-card input {
+  font: inherit; font-size: 16px; color: var(--fg); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  user-select: text; -webkit-user-select: text;
+}
+.hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.sheet-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.sheet-actions button { padding: 11px 20px; border-radius: 12px; background: var(--panel-2); font-weight: 600; }
+.sheet-actions .primary { background: var(--fg); color: var(--bg); }
+
 /* Overlays */
 .night {
   position: fixed; inset: 0; z-index: 50; background: #000;
@@ -274,6 +291,7 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
   <symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
   <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7zM12 17v5"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
   <symbol id="i-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
@@ -300,6 +318,9 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
     <button class="icon-btn" id="nightTest" type="button" title="Nachtmodus 22:30–7:00 testen">
       <svg><use href="#i-moon"/></svg><span class="label">Nachtmodus testen</span>
     </button>
+    <button class="icon-btn" id="openSettings" type="button" aria-label="Einstellungen">
+      <svg><use href="#i-gear"/></svg>
+    </button>
   </header>
 
   <main class="grid">
@@ -315,7 +336,7 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
     </section>
 
     <section class="card cal" aria-label="Kalender heute">
-      <div class="card-head"><svg><use href="#i-cal"/></svg><h2>Heute</h2><div class="end"><span class="chip">Beispiel</span></div></div>
+      <div class="card-head"><svg><use href="#i-cal"/></svg><h2>Heute</h2><div class="end"><span class="chip" id="calSource">Beispiel</span></div></div>
       <div class="cal-list" id="calList"></div>
     </section>
 
@@ -375,6 +396,19 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
   </main>
 </div>
 
+<div class="sheet" id="settings" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <form class="sheet-card" id="setForm">
+    <h2 id="setTitle">Einstellungen</h2>
+    <p class="hint">Wird nur auf diesem Gerät gespeichert, nicht auf GitHub.</p>
+    <label for="setCal">Kalender-Adresse (Cloudflare Worker)</label>
+    <input id="setCal" type="url" inputmode="url" placeholder="https://kalender.dein-name.workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="hint">Leer lassen, um Beispieltermine zu zeigen.</p>
+    <div class="sheet-actions">
+      <button type="button" id="setCancel">Abbrechen</button>
+      <button type="submit" class="primary">Speichern</button>
+    </div>
+  </form>
+</div>
 <div class="night" id="night" hidden>Zum Aufwecken tippen</div>
 <div class="alarm" id="alarm" hidden role="alertdialog" aria-label="Timer abgelaufen">
   <b>Zeit ist um</b>
@@ -463,24 +497,211 @@ async function loadWeather() {
   }
 }
 
-/* ===== Kalender (Beispiel; später iCloud-Abo-Link) ===== */
-const EVENTS = [
-  { allDay: true, title: "Umzugswoche" },
-  { start: "09:30", end: "10:00", title: "Bürgeramt – Wohnsitz ummelden" },
-  { start: "12:00", end: "14:00", title: "Möbellieferung" },
-  { start: "18:00", end: "19:00", title: "Sport" },
-  { start: "19:30", end: "22:00", title: "Abendessen bei Freunden" },
-];
-function renderCalendar() {
-  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
-  const toMin = (s) => +s.slice(0, 2) * 60 + +s.slice(3);
-  $("calList").innerHTML = EVENTS.map((e) => {
-    if (e.allDay) return `<div class="ev allday"><span class="time">GANZ&shy;TÄGIG</span><span class="title">${e.title}</span></div>`;
-    const s = toMin(e.start), en = toMin(e.end);
-    const cls = en <= mins ? "past" : s <= mins ? "now" : "";
-    return `<div class="ev ${cls}"><span class="time num">${e.start}</span><span class="title">${e.title}</span></div>`;
-  }).join("") || `<p class="cal-empty">Heute keine Termine.</p>`;
+/* ===== Einstellungen (nur auf diesem Gerät) ===== */
+let settings = store.get("settings", {});
+$("openSettings").addEventListener("click", () => {
+  $("setCal").value = settings.calendarUrl || "";
+  $("settings").hidden = false;
+});
+$("setCancel").addEventListener("click", () => ($("settings").hidden = true));
+$("setForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  settings.calendarUrl = $("setCal").value.trim();
+  store.set("settings", settings);
+  store.set("calIcs", null);
+  $("settings").hidden = true;
+  toast("Gespeichert");
+  loadCalendar(true);
+});
+
+/* ===== Kalender (iCloud-Abo über Cloudflare Worker) ===== */
+const DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / 864e5);
+const dayKey = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+const atTimeOf = (t, day) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), t.getHours(), t.getMinutes());
+const hhmm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+function icsDate(v) {
+  const y = +v.slice(0, 4), mo = +v.slice(4, 6) - 1, d = +v.slice(6, 8);
+  if (v.length === 8) return new Date(y, mo, d);
+  const h = +v.slice(9, 11), mi = +v.slice(11, 13), sec = +v.slice(13, 15) || 0;
+  // Zeiten mit TZID behandeln wir als Ortszeit – Dashboard und Kalender laufen beide in Berlin.
+  return v.endsWith("Z") ? new Date(Date.UTC(y, mo, d, h, mi, sec)) : new Date(y, mo, d, h, mi, sec);
 }
+function icsDuration(v) {
+  const m = v.match(/P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?/);
+  if (!m) return 0;
+  const [w, d, h, mi, sec] = m.slice(1).map((x) => +x || 0);
+  return ((((w * 7 + d) * 24 + h) * 60 + mi) * 60 + sec) * 1000;
+}
+const icsText = (v) => v.replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1");
+
+function parseICS(text) {
+  const events = [];
+  let cur = null;
+  for (const line of text.replace(/\r?\n[ \t]/g, "").split(/\r?\n/)) {
+    if (line === "BEGIN:VEVENT") { cur = {}; continue; }
+    if (line === "END:VEVENT") { if (cur) events.push(cur); cur = null; continue; }
+    if (!cur) continue;
+    const m = line.match(/^([A-Z-]+)((?:;[^:]*)?):(.*)$/);
+    if (!m) continue;
+    const [, name, params, value] = m;
+    switch (name) {
+      case "UID": cur.uid = value; break;
+      case "SUMMARY": cur.title = icsText(value); break;
+      case "STATUS": cur.status = value; break;
+      case "DTSTART": cur.start = icsDate(value); cur.allDay = value.length === 8 || /VALUE=DATE(;|$)/.test(params); break;
+      case "DTEND": cur.end = icsDate(value); break;
+      case "DURATION": cur.duration = icsDuration(value); break;
+      case "RRULE": cur.rrule = Object.fromEntries(value.split(";").map((p) => p.split("="))); break;
+      case "EXDATE": (cur.exdates = cur.exdates || []).push(...value.split(",").map((v) => dayKey(icsDate(v)))); break;
+      case "RECURRENCE-ID": cur.recurrenceId = dayKey(icsDate(value)); break;
+    }
+  }
+  const list = events.filter((e) => e.start && e.status !== "CANCELLED");
+  for (const e of list) {
+    if (!e.end) e.end = new Date(e.start.getTime() + (e.duration || (e.allDay ? 864e5 : 0)));
+    e.title = e.title || "(ohne Titel)";
+  }
+  // Einzeln geänderte Termine einer Serie ersetzen das ursprüngliche Vorkommen.
+  const moved = new Set(list.filter((e) => e.recurrenceId).map((e) => e.uid + "|" + e.recurrenceId));
+  for (const e of list) e.moved = moved;
+  return list;
+}
+
+function nthWeekday(b, day) {
+  const n = +b.slice(0, -2) || 0;
+  if (DAYS[day.getDay()] !== b.slice(-2)) return false;
+  if (!n) return true;
+  const last = new Date(day.getFullYear(), day.getMonth() + 1, 0).getDate();
+  return n > 0 ? Math.ceil(day.getDate() / 7) === n : Math.ceil((last - day.getDate() + 1) / 7) === -n;
+}
+function ruleHits(e, day) {
+  const r = e.rrule, s = startOfDay(e.start), interval = +(r.INTERVAL || 1);
+  const byDay = r.BYDAY ? r.BYDAY.split(",") : null;
+  if (day < s) return false;
+  switch (r.FREQ) {
+    case "DAILY":
+      return daysBetween(s, day) % interval === 0 && (!byDay || byDay.some((b) => nthWeekday(b, day)));
+    case "WEEKLY": {
+      const wd = byDay ? byDay.map((b) => b.slice(-2)) : [DAYS[s.getDay()]];
+      const monday = (d) => addDays(d, -((d.getDay() + 6) % 7));
+      return wd.includes(DAYS[day.getDay()]) && (daysBetween(monday(s), monday(day)) / 7) % interval === 0;
+    }
+    case "MONTHLY": {
+      const months = (day.getFullYear() - s.getFullYear()) * 12 + day.getMonth() - s.getMonth();
+      if (months % interval) return false;
+      return byDay ? byDay.some((b) => nthWeekday(b, day)) : day.getDate() === +(r.BYMONTHDAY || s.getDate());
+    }
+    case "YEARLY": {
+      if ((day.getFullYear() - s.getFullYear()) % interval) return false;
+      if (day.getMonth() !== (r.BYMONTH ? +r.BYMONTH - 1 : s.getMonth())) return false;
+      return byDay ? byDay.some((b) => nthWeekday(b, day)) : day.getDate() === s.getDate();
+    }
+  }
+  return false;
+}
+function occursOn(e, day) {
+  if (!ruleHits(e, day)) return false;
+  const r = e.rrule;
+  if (r.UNTIL) {
+    const until = icsDate(r.UNTIL);
+    if (r.UNTIL.length === 8 ? day > until : atTimeOf(e.start, day) > until) return false;
+  }
+  if (e.exdates && e.exdates.includes(dayKey(day))) return false;
+  if (e.moved.has(e.uid + "|" + dayKey(day))) return false;
+  if (r.COUNT) {
+    let n = 0;
+    for (let d = startOfDay(e.start); d <= day; d = addDays(d, 1)) if (ruleHits(e, d)) n++;
+    if (n > +r.COUNT) return false;
+  }
+  return true;
+}
+function eventsOn(day) {
+  const from = startOfDay(day), to = addDays(from, 1), out = [];
+  const overlaps = (st, en) => st < to && (en > from || st >= from);
+  for (const e of calEvents || []) {
+    if (!e.rrule) { if (overlaps(e.start, e.end)) out.push(e); continue; }
+    const dur = e.end - e.start, span = Math.ceil(dur / 864e5);
+    for (let k = 0; k <= span; k++) {
+      const d = addDays(from, -k);
+      if (!occursOn(e, d)) continue;
+      const st = e.allDay ? d : atTimeOf(e.start, d), en = new Date(st.getTime() + dur);
+      if (overlaps(st, en)) out.push({ ...e, start: st, end: en });
+    }
+  }
+  return out.sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start));
+}
+
+function sampleCalendar() {
+  const t = startOfDay(new Date()), at = (h, m) => new Date(t.getFullYear(), t.getMonth(), t.getDate(), h, m);
+  return [
+    { allDay: true, title: "Umzugswoche", start: t, end: addDays(t, 1) },
+    { title: "Bürgeramt – Wohnsitz ummelden", start: at(9, 30), end: at(10, 0) },
+    { title: "Möbellieferung", start: at(12, 0), end: at(14, 0) },
+    { title: "Sport", start: at(18, 0), end: at(19, 0) },
+    { title: "Abendessen bei Freunden", start: at(19, 30), end: at(22, 0) },
+  ];
+}
+let calError = "";
+function setCalChip(text, cls) {
+  const c = $("calSource");
+  c.textContent = text;
+  c.className = "chip" + (cls ? " " + cls : "");
+}
+function renderCalendar() {
+  const now = new Date(), today = startOfDay(now);
+  const list = eventsOn(today);
+  if (calError && !list.length) {
+    $("calList").innerHTML = `<p class="cal-empty">${calError}</p>`;
+    return;
+  }
+  const isPast = (e) => !e.allDay && (e.end > e.start ? e.end <= now : e.start < now);
+  const done = list.filter(isPast).length, rest = list.filter((e) => !isPast(e));
+  const doneNote = done ? `<p class="cal-empty">${done === 1 ? "1 Termin" : done + " Termine"} heute schon vorbei</p>` : "";
+  $("calList").innerHTML = doneNote + rest.map((e) => {
+    if (e.allDay) return `<div class="ev allday"><span class="time">GANZ&shy;TÄGIG</span><span class="title">${esc(e.title)}</span></div>`;
+    const cls = e.start <= now && e.end > now ? "now" : "";
+    const time = e.start < today ? "…" : hhmm(e.start);
+    const until = e.end > e.start ? `<span class="until num">bis ${e.end >= addDays(today, 1) ? "morgen" : hhmm(e.end)}</span>` : "";
+    return `<div class="ev ${cls}"><span class="time num">${time}</span><span class="title">${esc(e.title)}${until}</span></div>`;
+  }).join("") + (rest.length ? "" : `<p class="cal-empty">${done ? "Für heute keine Termine mehr." : "Heute keine Termine."}</p>`);
+}
+async function loadCalendar(announce) {
+  const url = settings.calendarUrl;
+  calError = "";
+  if (!url) {
+    calEvents = sampleCalendar();
+    setCalChip("Beispiel");
+    renderCalendar();
+    return;
+  }
+  try {
+    const r = await fetch(url, { cache: "no-store" });
+    const text = await r.text();
+    if (!r.ok) throw new Error(text || "Fehler " + r.status);
+    if (!text.includes("BEGIN:VCALENDAR")) throw new Error("Unter dieser Adresse liegt kein Kalender.");
+    calEvents = parseICS(text);
+    store.set("calIcs", text);
+    setCalChip("iCloud", "ok");
+    if (announce) toast("Kalender verbunden");
+  } catch (err) {
+    const cached = store.get("calIcs", null);
+    if (cached) {
+      calEvents = parseICS(cached);
+      setCalChip("offline · letzter Stand", "err");
+    } else {
+      calEvents = [];
+      calError = `Kalender konnte nicht geladen werden (${esc(String(err.message || err))}). Adresse in den Einstellungen prüfen.`;
+      setCalChip("Fehler", "err");
+    }
+  }
+  renderCalendar();
+}
+let calEvents = null;
 
 /* ===== Geräte (Voice Monkey → Alexa-Routinen) ===== */
 let devState = store.get("devState", { stehlampe: true, lichterkette: true });
@@ -622,13 +843,14 @@ document.addEventListener("visibilitychange", () => document.visibilityState ===
 document.addEventListener("pointerdown", unlockAudio, { once: true });
 
 /* ===== Start ===== */
-tickClock(); renderCalendar(); renderDevices(); renderTimer(); renderMusic(); updateNight(); keepAwake();
-loadWeather();
+tickClock(); renderDevices(); renderTimer(); renderMusic(); updateNight(); keepAwake();
+loadWeather(); loadCalendar();
 setInterval(() => {
   tickClock(); renderTimer(); updateNight();
   if (m.playing) { m.pos += 1; if (m.pos >= TRACKS[m.i].d) skip(1); else renderMusic(); }
 }, 1000);
 setInterval(renderCalendar, 60000);
+setInterval(loadCalendar, 5 * 60000);
 setInterval(loadWeather, 15 * 60000);
 </script>
 </body>
