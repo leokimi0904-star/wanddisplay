@@ -219,6 +219,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--sky); outli
 .vol { display: flex; align-items: center; gap: 10px; margin-left: auto; color: var(--muted); flex: 0 1 180px; min-width: 100px; }
 .vol svg { width: 18px; height: 18px; flex: none; }
 input[type=range] { width: 100%; accent-color: var(--fg); }
+.cover.has-img { background-size: cover; background-position: center; }
+.music.off .progress, .music.off .vol { visibility: hidden; }
+.music.off .track b { white-space: normal; font-size: 20px; }
+.music.off .track span { white-space: normal; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spotify); display: inline-block; }
 
 /* Einstellungen */
@@ -372,12 +376,12 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
       <div class="rooms" id="rooms"></div>
     </section>
 
-    <section class="card music" aria-label="Musik">
+    <section class="card music" id="musicCard" aria-label="Musik">
       <div class="card-head"><svg><use href="#i-music"/></svg><h2>Spotify</h2>
-        <div class="end"><span class="chip"><span class="dot"></span> iPad · Bluetooth-Box</span><span class="chip">Beispiel</span></div>
+        <div class="end"><span class="chip" id="mDevice" hidden><span class="dot"></span> <span id="mDeviceName"></span></span><span class="chip" id="mSource">Beispiel</span><button class="scene" type="button" id="mConnect" hidden>Verbinden</button></div>
       </div>
       <div class="player">
-        <div class="cover" role="img" aria-label="Albumcover"></div>
+        <div class="cover" id="mCover" role="img" aria-label="Albumcover"></div>
         <div style="min-width:0">
           <div class="track"><b id="mTitle">Haus am See</b><span id="mArtist">Peter Fox · Stadtaffe</span></div>
           <div class="progress">
@@ -388,7 +392,7 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
             <button type="button" id="mPrev" aria-label="Vorheriger Titel"><svg><use href="#i-prev"/></svg></button>
             <button type="button" class="play" id="mPlay" aria-label="Abspielen"><svg><use href="#i-play"/></svg></button>
             <button type="button" id="mNext" aria-label="Nächster Titel"><svg><use href="#i-next"/></svg></button>
-            <label class="vol"><svg><use href="#i-vol"/></svg><input type="range" id="mVol" min="0" max="100" value="45" aria-label="Lautstärke"></label>
+            <label class="vol" id="mVolWrap"><svg><use href="#i-vol"/></svg><input type="range" id="mVol" min="0" max="100" value="45" aria-label="Lautstärke"></label>
           </div>
         </div>
       </div>
@@ -403,6 +407,9 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
     <label for="setCal">Kalender-Adresse (Cloudflare Worker)</label>
     <input id="setCal" type="url" inputmode="url" placeholder="https://kalender.dein-name.workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
     <p class="hint">Leer lassen, um Beispieltermine zu zeigen.</p>
+    <label for="setSpotify">Spotify Client ID</label>
+    <input id="setSpotify" type="text" placeholder="32 Zeichen aus dem Spotify-Entwicklerportal" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="hint">Nach dem Speichern meldest du dich einmal bei Spotify an.</p>
     <div class="sheet-actions">
       <button type="button" id="setCancel">Abbrechen</button>
       <button type="submit" class="primary">Speichern</button>
@@ -501,6 +508,7 @@ async function loadWeather() {
 let settings = store.get("settings", {});
 $("openSettings").addEventListener("click", () => {
   $("setCal").value = settings.calendarUrl || "";
+  $("setSpotify").value = settings.spotifyClientId || "";
   $("settings").hidden = false;
 });
 $("setCancel").addEventListener("click", () => ($("settings").hidden = true));
@@ -512,6 +520,14 @@ $("setForm").addEventListener("submit", (e) => {
   $("settings").hidden = true;
   toast("Gespeichert");
   loadCalendar(true);
+  const spotifyId = $("setSpotify").value.trim();
+  if (spotifyId !== (settings.spotifyClientId || "")) {
+    settings.spotifyClientId = spotifyId;
+    store.set("settings", settings);
+    spAuth = null; store.set("spotifyAuth", null);
+    renderMusic();
+    if (spotifyId) spotifyLogin();
+  }
 });
 
 /* ===== Kalender (iCloud-Abo über Cloudflare Worker) ===== */
@@ -800,27 +816,169 @@ $("tPause").addEventListener("click", () => {
 $("tCancel").addEventListener("click", () => { timer = null; store.set("timer", null); renderTimer(); });
 $("alarmStop").addEventListener("click", stopAlarm);
 
-/* ===== Musik (Vorschau; später Spotify Web API) ===== */
+/* ===== Musik (Spotify Web API, Anmeldung per PKCE – kein Server nötig) ===== */
 const TRACKS = [
   { t: "Haus am See", a: "Peter Fox · Stadtaffe", d: 281 },
   { t: "Dickes B", a: "Seeed · New Dubby Conquerors", d: 252 },
-  { t: "Ich & Ich", a: "Ich + Ich · Vom selben Stern", d: 236 },
+  { t: "Vom selben Stern", a: "Ich + Ich · Vom selben Stern", d: 236 },
 ];
-let m = { i: 0, pos: 64, playing: false };
-const mmss = (s) => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
+const SP_SCOPES = "user-read-playback-state user-modify-playback-state user-read-currently-playing";
+const spRedirect = () => location.origin + location.pathname;
+let spAuth = store.get("spotifyAuth", null); // { access, refresh, exp }
+let spBackoff = 0;
+let m = { i: 0, pos: 64, dur: 281, playing: false, idle: false, title: "", artist: "", cover: "", device: null };
+const demoMode = () => !settings.spotifyClientId;
+
+const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+async function spotifyLogin() {
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+  const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+  store.set("spotifyVerifier", verifier);
+  location.href = "https://accounts.spotify.com/authorize?" + new URLSearchParams({
+    client_id: settings.spotifyClientId, response_type: "code", redirect_uri: spRedirect(),
+    code_challenge_method: "S256", code_challenge: challenge, scope: SP_SCOPES,
+  });
+}
+async function spToken(params) {
+  const r = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: settings.spotifyClientId, ...params }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const err = new Error(j.error_description || j.error || "Fehler " + r.status);
+    err.auth = j.error === "invalid_grant" || j.error === "invalid_client";
+    throw err;
+  }
+  spAuth = { access: j.access_token, refresh: j.refresh_token || spAuth?.refresh, exp: Date.now() + (j.expires_in - 60) * 1000 };
+  store.set("spotifyAuth", spAuth);
+}
+async function spotifyCallback() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("code") && !q.has("error")) return;
+  history.replaceState(null, "", spRedirect());
+  if (q.has("error")) return toast("Spotify-Anmeldung abgebrochen");
+  try {
+    await spToken({ grant_type: "authorization_code", code: q.get("code"), redirect_uri: spRedirect(), code_verifier: store.get("spotifyVerifier", "") });
+    toast("Spotify verbunden");
+  } catch (e) {
+    toast("Spotify-Anmeldung fehlgeschlagen: " + e.message);
+  }
+}
+async function sp(method, path, body, retried) {
+  if (Date.now() > spAuth.exp) await spToken({ grant_type: "refresh_token", refresh_token: spAuth.refresh });
+  const r = await fetch("https://api.spotify.com/v1" + path, {
+    method,
+    headers: { Authorization: "Bearer " + spAuth.access, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (r.status === 401 && !retried) { spAuth.exp = 0; return sp(method, path, body, true); }
+  if (r.status === 429) { spBackoff = Date.now() + (+r.headers.get("Retry-After") || 10) * 1000; throw new Error("rate"); }
+  const text = await r.text();
+  let j = null; try { j = text ? JSON.parse(text) : null; } catch {}
+  if (!r.ok) {
+    const err = new Error(j?.error?.message || "Fehler " + r.status);
+    err.status = r.status; err.reason = j?.error?.reason || "";
+    throw err;
+  }
+  return j;
+}
+function spError(e, quiet) {
+  if (e.auth) {
+    spAuth = null; store.set("spotifyAuth", null); renderMusic();
+    return toast("Spotify-Anmeldung abgelaufen – bitte neu verbinden");
+  }
+  if (e.reason === "VOLUME_CONTROL_DISALLOW") return toast("Lautstärke bitte direkt am iPad regeln");
+  if (!quiet && e.message !== "rate") toast("Spotify: " + e.message);
+}
+
+function applyPlayer(st) {
+  m.device = st?.device || null;
+  if (!st || !st.item) { m.idle = true; m.playing = false; return renderMusic(); }
+  const it = st.item;
+  m.idle = false;
+  m.title = it.name;
+  m.artist = it.artists ? it.artists.map((x) => x.name).join(", ") + (it.album ? " · " + it.album.name : "") : it.show?.name || "";
+  m.cover = ((it.album && it.album.images) || it.images || [])[0]?.url || "";
+  m.dur = Math.round(it.duration_ms / 1000);
+  m.pos = (st.progress_ms || 0) / 1000;
+  m.playing = st.is_playing;
+  if (m.device && document.activeElement !== $("mVol") && m.device.volume_percent != null) $("mVol").value = m.device.volume_percent;
+  renderMusic();
+}
+async function spotifyPoll() {
+  if (!spAuth || demoMode() || Date.now() < spBackoff || document.hidden || !$("night").hidden) return;
+  try { applyPlayer(await sp("GET", "/me/player?additional_types=episode")); }
+  catch (e) { spError(e, true); }
+}
+async function spAction(method, path) {
+  try {
+    await sp(method, path);
+  } catch (e) {
+    if (e.status !== 404) return spError(e);
+    // Kein aktives Gerät: Wiedergabe auf das iPad holen, falls die Spotify-App dort bekannt ist.
+    try {
+      const { devices = [] } = (await sp("GET", "/me/player/devices")) || {};
+      const d = devices.find((x) => x.type === "Tablet") || devices[0];
+      if (!d) return toast("Spotify-App auf dem iPad öffnen, dann klappt die Steuerung");
+      await sp("PUT", "/me/player", { device_ids: [d.id], play: path.endsWith("/play") });
+    } catch (e2) { return spError(e2); }
+  }
+  setTimeout(spotifyPoll, 700);
+}
+
 function renderMusic() {
-  const tr = TRACKS[m.i];
-  $("mTitle").textContent = tr.t; $("mArtist").textContent = tr.a;
-  $("mPos").textContent = mmss(m.pos); $("mDur").textContent = mmss(tr.d);
-  $("mBar").style.width = (m.pos / tr.d) * 100 + "%";
+  const demo = demoMode(), connected = !demo && !!spAuth;
+  const off = !demo && (!connected || m.idle);
+  $("musicCard").classList.toggle("off", off);
+  $("mConnect").hidden = demo || connected;
+  $("mSource").hidden = !demo;
+  $("mDevice").hidden = !connected || !m.device;
+  if (m.device) $("mDeviceName").textContent = m.device.name;
+  let title, artist, cover = "";
+  if (demo) { const tr = TRACKS[m.i]; title = tr.t; artist = tr.a; m.dur = tr.d; }
+  else if (!connected) { title = "Spotify ist nicht verbunden"; artist = "Oben rechts auf „Verbinden“ tippen und mit deinem Spotify-Konto anmelden."; }
+  else if (m.idle) { title = "Gerade läuft nichts"; artist = "Spotify-App auf dem iPad öffnen und Musik starten – danach steuerst du sie hier."; }
+  else { title = m.title; artist = m.artist; cover = m.cover; }
+  $("mTitle").textContent = title; $("mArtist").textContent = artist;
+  $("mCover").classList.toggle("has-img", !!cover);
+  $("mCover").style.backgroundImage = cover ? `url("${cover}")` : "";
+  $("mPos").textContent = mmss(m.pos); $("mDur").textContent = mmss(m.dur);
+  $("mBar").style.width = (m.dur ? Math.min(100, (m.pos / m.dur) * 100) : 0) + "%";
+  $("mVolWrap").hidden = connected && m.device && m.device.supports_volume === false;
   $("mPlay").innerHTML = `<svg><use href="#i-${m.playing ? "pause" : "play"}"/></svg>`;
   $("mPlay").setAttribute("aria-label", m.playing ? "Pause" : "Abspielen");
 }
-const skip = (dir) => { m.i = (m.i + dir + TRACKS.length) % TRACKS.length; m.pos = 0; renderMusic(); };
-$("mPlay").addEventListener("click", () => { m.playing = !m.playing; renderMusic(); });
-$("mPrev").addEventListener("click", () => (m.pos > 5 ? ((m.pos = 0), renderMusic()) : skip(-1)));
-$("mNext").addEventListener("click", () => skip(1));
-$("mVol").addEventListener("change", (e) => toast(`Lautstärke ${e.target.value} % (Vorschau)`));
+const mmss = (sec) => `${Math.floor(sec / 60)}:${pad(Math.floor(sec % 60))}`;
+const skipDemo = (dir) => { m.i = (m.i + dir + TRACKS.length) % TRACKS.length; m.pos = 0; renderMusic(); };
+function musicTick() {
+  if (!m.playing) return;
+  m.pos += 1;
+  if (m.pos < m.dur) return renderMusic();
+  if (demoMode()) skipDemo(1); else spotifyPoll();
+}
+const needsLogin = () => { if (demoMode()) return false; if (!spAuth) { spotifyLogin(); return true; } return false; };
+$("mConnect").addEventListener("click", spotifyLogin);
+$("mPlay").addEventListener("click", () => {
+  if (needsLogin()) return;
+  m.playing = !m.playing; renderMusic();
+  if (!demoMode()) spAction("PUT", m.playing ? "/me/player/play" : "/me/player/pause");
+});
+$("mPrev").addEventListener("click", () => {
+  if (needsLogin()) return;
+  if (!demoMode()) return spAction("POST", "/me/player/previous");
+  if (m.pos > 5) { m.pos = 0; renderMusic(); } else skipDemo(-1);
+});
+$("mNext").addEventListener("click", () => {
+  if (needsLogin()) return;
+  if (!demoMode()) return spAction("POST", "/me/player/next");
+  skipDemo(1);
+});
+$("mVol").addEventListener("change", (e) => {
+  if (demoMode()) return toast(`Lautstärke ${e.target.value} % (Beispiel)`);
+  if (spAuth) spAction("PUT", `/me/player/volume?volume_percent=${e.target.value}`);
+});
 
 /* ===== Nachtmodus ===== */
 const toMinutes = (s) => +s.slice(0, 2) * 60 + +s.slice(3);
@@ -845,13 +1003,15 @@ document.addEventListener("pointerdown", unlockAudio, { once: true });
 /* ===== Start ===== */
 tickClock(); renderDevices(); renderTimer(); renderMusic(); updateNight(); keepAwake();
 loadWeather(); loadCalendar();
+spotifyCallback().then(() => { renderMusic(); spotifyPoll(); });
 setInterval(() => {
   tickClock(); renderTimer(); updateNight();
-  if (m.playing) { m.pos += 1; if (m.pos >= TRACKS[m.i].d) skip(1); else renderMusic(); }
+  musicTick();
 }, 1000);
 setInterval(renderCalendar, 60000);
 setInterval(loadCalendar, 5 * 60000);
 setInterval(loadWeather, 15 * 60000);
+setInterval(spotifyPoll, 5000);
 </script>
 </body>
 </html>

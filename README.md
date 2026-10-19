@@ -26,7 +26,7 @@ Zugangsschlüssel (Voice Monkey, Spotify) kommen **nie** in dieses Repo – sie 
 | Timer mit Ton | fertig |
 | Licht & Steckdosen | Oberfläche fertig, Alexa-Anbindung (Voice Monkey) folgt |
 | Kalender (iCloud) | fertig – Einrichtung siehe unten |
-| Spotify | Beispiel, Anbindung folgt |
+| Spotify | fertig – Einrichtung siehe unten |
 
 ## Kalender einrichten
 
@@ -46,6 +46,20 @@ iCloud-Link nicht direkt laden dürfen, holt ein kostenloser **Cloudflare Worker
 
 Neue Termine erscheinen nach wenigen Minuten (iCloud aktualisiert den öffentlichen Link
 mit etwas Verzögerung, das Dashboard fragt alle 5 Minuten nach).
+
+## Spotify einrichten
+
+Voraussetzung: Spotify Premium (sonst erlaubt Spotify keine Fernsteuerung).
+
+1. https://developer.spotify.com/dashboard → *Create app*:
+   Redirect URI **`https://leokimi0904-star.github.io/wanddisplay/`**, Haken bei **Web API** → *Save*.
+2. In der App unter *Settings* die **Client ID** kopieren.
+3. **iPad:** Dashboard (Home-Bildschirm-App) → Zahnrad → Client ID eintragen → *Speichern* →
+   bei Spotify anmelden → *Zustimmen*. Danach landest du wieder im Dashboard.
+4. Musik in der **Spotify-App auf dem iPad** starten (Bluetooth-Box mit dem iPad verbunden).
+   Ab dann steuerst du Play/Pause, Titel und Lautstärke über das Dashboard.
+
+Läuft gerade nichts, versucht der Play-Button die Wiedergabe auf dem iPad fortzusetzen.
 
 ## Auf dem iPad einrichten
 
