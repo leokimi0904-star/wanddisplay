@@ -66,7 +66,7 @@ Läuft gerade nichts, versucht der Play-Button die Wiedergabe auf dem iPad fortz
 Kachel antippen → Voice Monkey → Alexa-Routine → Gerät schaltet.
 
 1. **Voice Monkey** (https://voicemonkey.io): pro Gerät zwei *Routine Trigger* anlegen,
-   benannt nach der `id` aus `config.js`: `<id>-an` und `<id>-aus` (z. B. `stehlampe-an`).
+   Die **ID**, die Voice Monkey unter dem Namen anzeigt (z. B. `stehlampe-an-x4n8e`), kommt in `config.js` bei `on`/`off`.
    Für die Szene „Gute Nacht“ einen Trigger `gute-nacht`.
 2. **Alexa-App:** pro Trigger eine Routine – *Wenn:* Smart Home → Trigger, *Aktion:* Gerät ein/aus.
 3. **iPad:** Zahnrad → *Voice Monkey API-Token* eintragen (Voice Monkey → *API Tokens*).

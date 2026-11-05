@@ -738,13 +738,22 @@ async function fireTrigger(name) {
   try {
     const r = await fetch(url, { cache: "no-store" });
     const j = await r.json().catch(() => null);
-    if (!r.ok || (j && j.success === false)) return (j && (j.error || j.message)) || `Fehler ${r.status}`;
+    if (!r.ok || (j && j.success === false)) return vmError((j && (j.error || j.message)) || `Fehler ${r.status}`);
     return "ok";
   } catch {
     // Blockiert der Browser nur das Lesen der Antwort (CORS), ist der Auslöser trotzdem angekommen.
     return navigator.onLine === false ? "Keine Internetverbindung" : "unbestaetigt";
   }
 }
+const VM_ERRORS = {
+  UNAUTHORIZED: "Voice-Monkey-Token fehlt",
+  INVALID_TOKEN: "Voice-Monkey-Token ist ungültig – in den Einstellungen prüfen",
+  USER_NOT_FOUND: "Voice-Monkey-Token ist ungültig – in den Einstellungen prüfen",
+  MISSING_DEVICE: "Auslöser-ID fehlt in config.js",
+  MONTHLY_QUOTA_EXCEEDED: "Voice-Monkey-Monatskontingent aufgebraucht",
+  THROTTLED: "zu viele Schaltvorgänge – kurz warten",
+};
+const vmError = (code) => VM_ERRORS[String(code).split(":")[0]] || (/device/i.test(code) ? "Auslöser nicht gefunden – ID in config.js prüfen" : code);
 function renderDevices() {
   const chip = $("devSource");
   chip.hidden = !CONFIG.exampleDevices && !!settings.voiceMonkeyToken;
