@@ -24,7 +24,7 @@ Zugangsschlüssel (Voice Monkey, Spotify) kommen **nie** in dieses Repo – sie 
 | Uhr, Datum, Nachtmodus | fertig |
 | Wetter (Open-Meteo) | live |
 | Timer mit Ton | fertig |
-| Licht & Steckdosen | Oberfläche fertig, Alexa-Anbindung (Voice Monkey) folgt |
+| Licht & Steckdosen | fertig – Geräte nach dem Umzug in `config.js` eintragen |
 | Kalender (iCloud) | fertig – Einrichtung siehe unten |
 | Spotify | fertig – Einrichtung siehe unten |
 
@@ -60,6 +60,19 @@ Voraussetzung: Spotify Premium (sonst erlaubt Spotify keine Fernsteuerung).
    Ab dann steuerst du Play/Pause, Titel und Lautstärke über das Dashboard.
 
 Läuft gerade nichts, versucht der Play-Button die Wiedergabe auf dem iPad fortzusetzen.
+
+## Licht & Steckdosen (Voice Monkey)
+
+Kachel antippen → Voice Monkey → Alexa-Routine → Gerät schaltet.
+
+1. **Voice Monkey** (https://voicemonkey.io): pro Gerät zwei *Routine Trigger* anlegen,
+   benannt nach der `id` aus `config.js`: `<id>-an` und `<id>-aus` (z. B. `stehlampe-an`).
+   Für die Szene „Gute Nacht“ einen Trigger `gute-nacht`.
+2. **Alexa-App:** pro Trigger eine Routine – *Wenn:* Smart Home → Trigger, *Aktion:* Gerät ein/aus.
+3. **iPad:** Zahnrad → *Voice Monkey API-Token* eintragen (Voice Monkey → *API Tokens*).
+
+Hinweis: Alexa meldet nicht zurück, ob ein Gerät an ist. Die Kacheln zeigen,
+was zuletzt über das Dashboard geschaltet wurde.
 
 ## Auf dem iPad einrichten
 

@@ -369,7 +369,7 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
       <div class="card-head">
         <svg><use href="#i-home"/></svg><h2>Licht &amp; Steckdosen</h2>
         <div class="end">
-          <span class="chip">Beispielgeräte</span>
+          <span class="chip" id="devSource">Beispielgeräte</span>
           <button class="scene" type="button" id="sceneNight"><svg><use href="#i-moon"/></svg>Gute Nacht</button>
         </div>
       </div>
@@ -410,6 +410,9 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
     <label for="setSpotify">Spotify Client ID</label>
     <input id="setSpotify" type="text" placeholder="32 Zeichen aus dem Spotify-Entwicklerportal" autocomplete="off" autocapitalize="off" spellcheck="false">
     <p class="hint">Nach dem Speichern meldest du dich einmal bei Spotify an.</p>
+    <label for="setVM">Voice Monkey API-Token</label>
+    <input id="setVM" type="password" placeholder="Aus „API Tokens“ im Voice-Monkey-Dashboard" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="hint">Damit schaltet das Dashboard deine Alexa-Routinen. Leer lassen für die Vorschau.</p>
     <div class="sheet-actions">
       <button type="button" id="setCancel">Abbrechen</button>
       <button type="submit" class="primary">Speichern</button>
@@ -509,13 +512,16 @@ let settings = store.get("settings", {});
 $("openSettings").addEventListener("click", () => {
   $("setCal").value = settings.calendarUrl || "";
   $("setSpotify").value = settings.spotifyClientId || "";
+  $("setVM").value = settings.voiceMonkeyToken || "";
   $("settings").hidden = false;
 });
 $("setCancel").addEventListener("click", () => ($("settings").hidden = true));
 $("setForm").addEventListener("submit", (e) => {
   e.preventDefault();
   settings.calendarUrl = $("setCal").value.trim();
+  settings.voiceMonkeyToken = $("setVM").value.trim();
   store.set("settings", settings);
+  renderDevices();
   store.set("calIcs", null);
   $("settings").hidden = true;
   toast("Gespeichert");
@@ -720,40 +726,66 @@ async function loadCalendar(announce) {
 let calEvents = null;
 
 /* ===== Geräte (Voice Monkey → Alexa-Routinen) ===== */
-let devState = store.get("devState", { stehlampe: true, lichterkette: true });
-async function sendToAlexa(deviceId, on) {
-  // Später: fetch(`https://api-v2.voicemonkey.io/trigger?token=${token}&device=${deviceId}-${on ? "an" : "aus"}`)
-  await new Promise((r) => setTimeout(r, 350));
-  return true;
+let devState = store.get("devState", {});
+const allDevices = () => CONFIG.rooms.flatMap((r) => r.devices);
+const triggerName = (d, on) => (on ? d.on : d.off) || `${d.id}-${on ? "an" : "aus"}`;
+
+// Löst einen Voice-Monkey-Auslöser aus. Ergebnis: "ok", "unbestaetigt" (Anfrage raus, Antwort nicht lesbar) oder Fehlertext.
+async function fireTrigger(name) {
+  const token = settings.voiceMonkeyToken;
+  if (!token) { await new Promise((r) => setTimeout(r, 300)); return "vorschau"; }
+  const url = CONFIG.voiceMonkeyUrl.replace("{token}", encodeURIComponent(token)).replace("{device}", encodeURIComponent(name));
+  try {
+    const r = await fetch(url, { cache: "no-store" });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || (j && j.success === false)) return (j && (j.error || j.message)) || `Fehler ${r.status}`;
+    return "ok";
+  } catch {
+    // Blockiert der Browser nur das Lesen der Antwort (CORS), ist der Auslöser trotzdem angekommen.
+    return navigator.onLine === false ? "Keine Internetverbindung" : "unbestaetigt";
+  }
 }
 function renderDevices() {
+  const chip = $("devSource");
+  chip.hidden = !CONFIG.exampleDevices && !!settings.voiceMonkeyToken;
+  chip.textContent = CONFIG.exampleDevices ? "Beispielgeräte" : "Vorschau – Token fehlt";
   $("rooms").innerHTML = CONFIG.rooms.map((room) => `
-    <div class="room"><h3>${room.name}</h3><div class="tiles">
+    <div class="room"><h3>${esc(room.name)}</h3><div class="tiles">
       ${room.devices.map((d) => `
         <button type="button" class="tile" data-id="${d.id}" aria-pressed="${!!devState[d.id]}">
           <span class="ico"><svg><use href="#i-${d.type === "light" ? "bulb" : "plug"}"/></svg></span>
-          <span><span class="name">${d.name}</span><span class="state" style="display:block">${devState[d.id] ? "An" : "Aus"}</span></span>
+          <span><span class="name">${esc(d.name)}</span><span class="state" style="display:block">${devState[d.id] ? "An" : "Aus"}</span></span>
         </button>`).join("")}
     </div></div>`).join("");
 }
-const allDevices = () => CONFIG.rooms.flatMap((r) => r.devices);
-$("rooms").addEventListener("click", async (e) => {
-  const tile = e.target.closest(".tile"); if (!tile) return;
-  const id = tile.dataset.id, on = !devState[id];
+function setTile(id, on) {
   devState[id] = on; store.set("devState", devState);
+  const tile = document.querySelector(`.tile[data-id="${id}"]`);
+  if (!tile) return;
   tile.setAttribute("aria-pressed", on);
   tile.querySelector(".state").textContent = on ? "An" : "Aus";
+}
+$("rooms").addEventListener("click", async (e) => {
+  const tile = e.target.closest(".tile");
+  if (!tile || tile.classList.contains("busy")) return;
+  const dev = allDevices().find((d) => d.id === tile.dataset.id), on = !devState[dev.id];
+  setTile(dev.id, on);
   tile.classList.add("busy");
-  await sendToAlexa(id, on);
+  const res = await fireTrigger(triggerName(dev, on));
   tile.classList.remove("busy");
-  const dev = allDevices().find((d) => d.id === id);
-  toast(`${dev.name} ${on ? "eingeschaltet" : "ausgeschaltet"} (Vorschau, noch nicht mit Alexa verbunden)`);
+  if (res === "ok" || res === "unbestaetigt") return;
+  if (res === "vorschau") return toast(`${dev.name} ${on ? "an" : "aus"} (Vorschau – Voice-Monkey-Token in den Einstellungen fehlt)`);
+  setTile(dev.id, !on);
+  toast(`${dev.name} konnte nicht geschaltet werden: ${res}`);
 });
 $("sceneNight").addEventListener("click", async () => {
-  allDevices().forEach((d) => (devState[d.id] = false));
-  store.set("devState", devState); renderDevices();
-  await sendToAlexa("gute-nacht", true);
-  toast("Gute Nacht: alle Geräte aus (Vorschau)");
+  const before = { ...devState };
+  allDevices().forEach((d) => setTile(d.id, false));
+  const res = await fireTrigger(CONFIG.scenes.guteNacht);
+  if (res === "vorschau") return toast("Gute Nacht: alles aus (Vorschau)");
+  if (res === "ok" || res === "unbestaetigt") return toast("Gute Nacht – alles aus");
+  Object.entries(before).forEach(([id, on]) => setTile(id, on));
+  toast(`Gute Nacht hat nicht geklappt: ${res}`);
 });
 
 /* ===== Timer ===== */
