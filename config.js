@@ -3,6 +3,11 @@
 const CONFIG = {
   location: { lat: 52.4370, lon: 13.3860 },          // 12105 Berlin-Mariendorf
   night: { off: "22:30", on: "07:00" },
+
+  // Aussehen: "hell", "abend" (helles Dunkelblau) oder "nacht" (ganz dunkel).
+  look: "hell",
+  // Lebkuchenmann neben dem Datum – nach den Feiertagen auf false setzen.
+  christmas: true,
   // Voice Monkey v3: Adresse zum Auslösen eines "Routine Trigger".
   voiceMonkeyUrl: "https://api-v3.voicemonkey.io/trigger?token={token}&device={device}",
 

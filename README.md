@@ -8,6 +8,9 @@ nachts von 22:30 bis 7:00 schwarz.
 
 ## Einstellungen
 
+Aussehen: `look` in `config.js` – `"hell"` (Standard), `"abend"` oder `"nacht"`.
+Der Lebkuchenmann neben dem Datum verschwindet mit `christmas: false`.
+
 Alles Anpassbare steht in [`config.js`](config.js): Ort, Nachtzeiten, Räume und Geräte.
 Ein Gerät sieht so aus:
 
