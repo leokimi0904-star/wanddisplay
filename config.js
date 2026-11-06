@@ -6,8 +6,12 @@ const CONFIG = {
   // Voice Monkey v3: Adresse zum Auslösen eines "Routine Trigger".
   voiceMonkeyUrl: "https://api-v3.voicemonkey.io/trigger?token={token}&device={device}",
 
-  // Alexa-Routinen-Auslöser für Szenen: die ID, die Voice Monkey unter dem Namen anzeigt.
-  scenes: { guteNacht: "guten-morgen-z2f7h" },
+  // Szenen-Knöpfe: trigger = die ID, die Voice Monkey unter dem Namen anzeigt.
+  // allOff: true setzt danach alle Kacheln auf "Aus". icon: "moon", "sun", "bulb" oder "home".
+  scenes: [
+    { name: "Guten Morgen", icon: "sun",  trigger: "guten-morgen-zfthq" },
+    { name: "Gute Nacht",   icon: "moon", trigger: "guten-morgen-z2f7h", allOff: true },
+  ],
 
   // true = die Geräte unten sind nur Platzhalter.
   exampleDevices: true,

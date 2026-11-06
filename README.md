@@ -67,16 +67,26 @@ Kachel antippen → Voice Monkey → Alexa-Routine → Gerät schaltet.
 
 1. **Voice Monkey** (https://voicemonkey.io): pro Gerät zwei *Routine Trigger* anlegen,
    Die **ID**, die Voice Monkey unter dem Namen anzeigt (z. B. `stehlampe-an-x4n8e`), kommt in `config.js` bei `on`/`off`.
-   Für die Szene „Gute Nacht“ einen Trigger `gute-nacht`.
+   Szenen-Knöpfe (z. B. „Gute Nacht“) stehen in `config.js` unter `scenes`.
 2. **Alexa-App:** pro Trigger eine Routine – *Wenn:* Smart Home → Trigger, *Aktion:* Gerät ein/aus.
 3. **iPad:** Zahnrad → *Voice Monkey API-Token* eintragen (Voice Monkey → *API Tokens*).
 
 Hinweis: Alexa meldet nicht zurück, ob ein Gerät an ist. Die Kacheln zeigen,
 was zuletzt über das Dashboard geschaltet wurde.
 
-## Auf dem iPad einrichten
+## Am Computer einrichten, aufs iPad übertragen
 
-1. In Safari die Live-Adresse öffnen → Teilen → **Zum Home-Bildschirm**.
-2. Einstellungen → Anzeige & Helligkeit → **Automatische Sperre: Nie**.
-3. Einstellungen (Zahnrad) **in der Home-Bildschirm-App** eintragen – sie hat einen eigenen Speicher, getrennt von Safari.
-4. Optional: Einstellungen → Bedienungshilfen → **Geführter Zugriff**, damit das Dashboard immer im Vordergrund bleibt.
+1. Am Computer https://leokimi0904-star.github.io/wanddisplay/ öffnen → Zahnrad →
+   Kalender-Adresse, Spotify Client ID und Voice-Monkey-Token eintragen → *Speichern*.
+2. Alles testen (Kalender, „Gute Nacht“). Dann Zahnrad → *Auf ein anderes Gerät übertragen* →
+   **Einrichtungscode kopieren** und an dich selbst schicken (Notiz, AirDrop, Mail an dich).
+
+## Auf dem iPad installieren
+
+1. Safari → https://leokimi0904-star.github.io/wanddisplay/ → Teilen → **Zum Home-Bildschirm**.
+2. Die neue App **„Zuhause“** öffnen → Zahnrad → *Auf ein anderes Gerät übertragen* →
+   Einrichtungscode einfügen → *Speichern* → einmal bei Spotify anmelden.
+   (Die Home-Bildschirm-App hat einen eigenen Speicher, deshalb erst dort einfügen.)
+3. Einstellungen → Anzeige & Helligkeit → **Automatische Sperre: Nie**.
+4. Bluetooth-Box mit dem iPad koppeln, Spotify-App einmal starten.
+5. Optional: Bedienungshilfen → **Geführter Zugriff**, damit das Dashboard im Vordergrund bleibt.

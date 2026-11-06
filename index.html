@@ -7,6 +7,10 @@
 <meta name="apple-mobile-web-app-title" content="Zuhause">
 <meta name="theme-color" content="#0e131a">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -236,6 +240,14 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
   user-select: text; -webkit-user-select: text;
 }
 .hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.scene-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.transfer { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 6px; display: grid; gap: 8px; }
+.transfer summary { cursor: pointer; font-weight: 600; font-size: 14px; padding: 8px 0; }
+.transfer .row { display: flex; gap: 10px; flex-wrap: wrap; margin-block: 10px 4px; }
+.transfer label, .transfer input { display: block; width: 100%; box-sizing: border-box; }
+.transfer input { margin-top: 8px; }
+.transfer button { padding: 10px 16px; border-radius: 12px; background: var(--panel-2); font-weight: 600; }
+.sheet-card { max-height: calc(100vh - 48px); overflow-y: auto; }
 .sheet-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 .sheet-actions button { padding: 11px 20px; border-radius: 12px; background: var(--panel-2); font-weight: 600; }
 .sheet-actions .primary { background: var(--fg); color: var(--bg); }
@@ -370,9 +382,9 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
         <svg><use href="#i-home"/></svg><h2>Licht &amp; Steckdosen</h2>
         <div class="end">
           <span class="chip" id="devSource">Beispielgeräte</span>
-          <button class="scene" type="button" id="sceneNight"><svg><use href="#i-moon"/></svg>Gute Nacht</button>
         </div>
       </div>
+      <div class="scene-row" id="scenes"></div>
       <div class="rooms" id="rooms"></div>
     </section>
 
@@ -413,6 +425,13 @@ input[type=range] { width: 100%; accent-color: var(--fg); }
     <label for="setVM">Voice Monkey API-Token</label>
     <input id="setVM" type="password" placeholder="Aus „API Tokens“ im Voice-Monkey-Dashboard" autocomplete="off" autocapitalize="off" spellcheck="false">
     <p class="hint">Damit schaltet das Dashboard deine Alexa-Routinen. Leer lassen für die Vorschau.</p>
+    <details class="transfer">
+      <summary>Auf ein anderes Gerät übertragen</summary>
+      <p class="hint">Richte alles einmal am Computer ein, kopiere den Einrichtungscode und füge ihn auf dem iPad hier ein. Der Code enthält deine Zugangsdaten, schick ihn nur an dich selbst.</p>
+      <div class="row"><button type="button" id="copySetup">Einrichtungscode kopieren</button></div>
+      <label for="setImport">Einrichtungscode einfügen</label>
+      <input id="setImport" type="text" placeholder="WD1:…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </details>
     <div class="sheet-actions">
       <button type="button" id="setCancel">Abbrechen</button>
       <button type="submit" class="primary">Speichern</button>
@@ -513,9 +532,29 @@ $("openSettings").addEventListener("click", () => {
   $("setCal").value = settings.calendarUrl || "";
   $("setSpotify").value = settings.spotifyClientId || "";
   $("setVM").value = settings.voiceMonkeyToken || "";
+  $("setImport").value = "";
   $("settings").hidden = false;
 });
 $("setCancel").addEventListener("click", () => ($("settings").hidden = true));
+// Einrichtungscode: die drei Einstellungen als eine Zeichenkette zum Übertragen aufs iPad.
+const encodeSetup = (o) => "WD1:" + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))));
+function decodeSetup(code) {
+  const m = code.trim().match(/^WD1:([A-Za-z0-9+/=]+)$/);
+  if (!m) return null;
+  try { return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1]), (c) => c.charCodeAt(0)))); } catch { return null; }
+}
+$("copySetup").addEventListener("click", async () => {
+  const code = encodeSetup({ c: $("setCal").value.trim(), s: $("setSpotify").value.trim(), v: $("setVM").value.trim() });
+  try { await navigator.clipboard.writeText(code); toast("Einrichtungscode kopiert"); }
+  catch { $("setImport").value = code; $("setImport").select(); toast("Code markiert – jetzt kopieren"); }
+});
+$("setImport").addEventListener("input", () => {
+  const o = decodeSetup($("setImport").value);
+  if (!o) return;
+  $("setCal").value = o.c || ""; $("setSpotify").value = o.s || ""; $("setVM").value = o.v || "";
+  $("setImport").value = "";
+  toast("Code übernommen – jetzt „Speichern“ tippen");
+});
 $("setForm").addEventListener("submit", (e) => {
   e.preventDefault();
   settings.calendarUrl = $("setCal").value.trim();
@@ -779,6 +818,7 @@ $("rooms").addEventListener("click", async (e) => {
   if (!tile || tile.classList.contains("busy")) return;
   const dev = allDevices().find((d) => d.id === tile.dataset.id), on = !devState[dev.id];
   setTile(dev.id, on);
+  if (CONFIG.exampleDevices) return toast(`${dev.name}: Beispielgerät – wird nach dem Umzug eingerichtet`);
   tile.classList.add("busy");
   const res = await fireTrigger(triggerName(dev, on));
   tile.classList.remove("busy");
@@ -787,14 +827,22 @@ $("rooms").addEventListener("click", async (e) => {
   setTile(dev.id, !on);
   toast(`${dev.name} konnte nicht geschaltet werden: ${res}`);
 });
-$("sceneNight").addEventListener("click", async () => {
-  const before = { ...devState };
-  allDevices().forEach((d) => setTile(d.id, false));
-  const res = await fireTrigger(CONFIG.scenes.guteNacht);
-  if (res === "vorschau") return toast("Gute Nacht: alles aus (Vorschau)");
-  if (res === "ok" || res === "unbestaetigt") return toast("Gute Nacht – alles aus");
+function renderScenes() {
+  $("scenes").innerHTML = CONFIG.scenes.map((sc, i) =>
+    `<button class="scene" type="button" data-i="${i}"><svg><use href="#i-${sc.icon || "home"}"/></svg>${esc(sc.name)}</button>`).join("");
+}
+$("scenes").addEventListener("click", async (e) => {
+  const btn = e.target.closest(".scene");
+  if (!btn || btn.disabled) return;
+  const sc = CONFIG.scenes[+btn.dataset.i], before = { ...devState };
+  if (sc.allOff) allDevices().forEach((d) => setTile(d.id, false));
+  btn.disabled = true;
+  const res = await fireTrigger(sc.trigger);
+  btn.disabled = false;
+  if (res === "vorschau") return toast(`${sc.name} (Vorschau – Voice-Monkey-Token in den Einstellungen fehlt)`);
+  if (res === "ok" || res === "unbestaetigt") return toast(sc.allOff ? `${sc.name} – alles aus` : `${sc.name} ausgelöst`);
   Object.entries(before).forEach(([id, on]) => setTile(id, on));
-  toast(`Gute Nacht hat nicht geklappt: ${res}`);
+  toast(`${sc.name} hat nicht geklappt: ${res}`);
 });
 
 /* ===== Timer ===== */
@@ -1042,7 +1090,7 @@ document.addEventListener("visibilitychange", () => document.visibilityState ===
 document.addEventListener("pointerdown", unlockAudio, { once: true });
 
 /* ===== Start ===== */
-tickClock(); renderDevices(); renderTimer(); renderMusic(); updateNight(); keepAwake();
+tickClock(); renderDevices(); renderScenes(); renderTimer(); renderMusic(); updateNight(); keepAwake();
 loadWeather(); loadCalendar();
 spotifyCallback().then(() => { renderMusic(); spotifyPoll(); });
 setInterval(() => {
