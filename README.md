@@ -61,6 +61,9 @@ Voraussetzung: Spotify Premium (sonst erlaubt Spotify keine Fernsteuerung).
 
 Läuft gerade nichts, versucht der Play-Button die Wiedergabe auf dem iPad fortzusetzen.
 
+Über **Playlists** (in der Spotify-Karte) siehst du deine Playlists und startest sie direkt auf dem iPad.
+Die Spotify-App muss dafür auf dem iPad geöffnet sein (Hintergrund reicht).
+
 ## Licht & Steckdosen (Voice Monkey)
 
 Kachel antippen → Voice Monkey → Alexa-Routine → Gerät schaltet.
